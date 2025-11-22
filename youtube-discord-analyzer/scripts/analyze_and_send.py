@@ -317,41 +317,99 @@ def split_message(text: str, max_length: int = 1900) -> List[str]:
 
 def generate_korean_translation(text: str) -> str:
     """
-    Generate Korean translation of the text
-    This is a placeholder - in production, you would use a translation API
-    or Claude API for better quality
+    Generate Korean translation of the text using OpenAI API
     """
-    # For now, return a placeholder message
-    # In production, integrate with translation API or Claude
-    return """[자동 번역 기능을 사용하려면 번역 API를 설정해주세요]
+    api_key = os.getenv('OPENAI_API_KEY')
 
-텍스트를 한글로 번역하려면:
-1. Claude API를 사용하여 번역하거나
-2. Google Translate API를 통합하거나
-3. 다른 번역 서비스를 사용하세요
+    if not api_key:
+        return """[번역 실패: OPENAI_API_KEY가 설정되지 않았습니다]
 
-원본 텍스트:
-""" + text[:500] + ("..." if len(text) > 500 else "")
+.env 파일에 다음을 추가하세요:
+OPENAI_API_KEY=your_openai_api_key_here
+
+OpenAI API 키는 https://platform.openai.com/api-keys 에서 발급받을 수 있습니다."""
+
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(api_key=api_key)
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # 저렴하고 빠른 모델
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a professional translator. Translate the following English text to natural, fluent Korean. Maintain the original meaning and tone."
+                },
+                {
+                    "role": "user",
+                    "content": f"Translate this English text to Korean:\n\n{text}"
+                }
+            ],
+            temperature=0.3,
+            max_tokens=4000
+        )
+
+        translation = response.choices[0].message.content.strip()
+        return translation
+
+    except ImportError:
+        return "[번역 실패: openai 라이브러리가 설치되지 않았습니다. 'pip install openai'를 실행하세요]"
+    except Exception as e:
+        return f"[번역 중 오류 발생: {str(e)}]"
 
 
 def generate_korean_summary(text: str) -> str:
     """
-    Generate a Korean summary of the text (200-300 characters)
-    This is a placeholder - in production, you would use Claude API
+    Generate a Korean summary of the text (200-300 characters) using OpenAI API
     """
-    # For now, return a placeholder message
-    # In production, integrate with Claude API for summarization
-    word_count = len(text.split())
+    api_key = os.getenv('OPENAI_API_KEY')
 
-    return f"""[자동 요약 기능을 사용하려면 Claude API를 설정해주세요]
+    if not api_key:
+        return """[요약 실패: OPENAI_API_KEY가 설정되지 않았습니다]
 
-현재 영상의 자막은 약 {word_count}개의 단어로 구성되어 있습니다.
+.env 파일에 다음을 추가하세요:
+OPENAI_API_KEY=your_openai_api_key_here
 
-요약을 생성하려면:
-1. Claude API 키를 설정하고
-2. 텍스트를 Claude에게 전송하여 한글 요약을 받으세요
+OpenAI API 키는 https://platform.openai.com/api-keys 에서 발급받을 수 있습니다."""
 
-간단한 요약: 영상 자막이 성공적으로 추출되었습니다."""
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(api_key=api_key)
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # 저렴하고 빠른 모델
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert summarizer. Create concise, informative summaries in Korean."
+                },
+                {
+                    "role": "user",
+                    "content": f"""다음 영어 텍스트를 읽고 핵심 내용을 한국어로 요약해주세요.
+
+요구사항:
+- 200-300자 정도의 간결한 요약
+- 주요 포인트와 핵심 메시지 포함
+- 한국어로 작성
+- 불릿 포인트나 번호 목록 사용 가능
+
+텍스트:
+{text}"""
+                }
+            ],
+            temperature=0.5,
+            max_tokens=1000
+        )
+
+        summary = response.choices[0].message.content.strip()
+        return summary
+
+    except ImportError:
+        return "[요약 실패: openai 라이브러리가 설치되지 않았습니다. 'pip install openai'를 실행하세요]"
+    except Exception as e:
+        return f"[요약 중 오류 발생: {str(e)}]"
 
 
 async def main_async():
